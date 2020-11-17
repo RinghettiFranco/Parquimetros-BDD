@@ -244,12 +244,13 @@ public class CargaInspector extends JFrame {
 		String calle = cbCalles.getSelectedItem().toString();
     	String altura = cbAlturas.getSelectedItem().toString();
     	int h = cal.get(Calendar.HOUR_OF_DAY);
-    	int id;
+    	
     	boolean turno;
     	boolean horario;
-    	
+    	/*
 	    String sqlChequeo = "SELECT id_asociado_con, dia, turno FROM asociado_con "
 							+"WHERE legajo = "+legajo+" AND calle LIKE '"+calle+"' AND altura = "+altura+";";
+	    */
 	    String sqlAcceso = "INSERT INTO Accede(legajo,id_parq,fecha,hora) "
 							+"VALUES ("+legajo+","+id_parq+",'"+fecha+"','"+hora+"');";
 	    String sqlEstacionados = "SELECT patente FROM estacionados "
@@ -270,44 +271,37 @@ public class CargaInspector extends JFrame {
 			while(rs.next()) {
 				est.add(rs.getString("patente"));
 			}
-	    	rs = stmt.executeQuery(sqlChequeo);
-	    	if (rs.next()) {
-	    		turno = rs.getString("dia").equals(dia);
-	    		horario = (rs.getString("turno").equals("M") && h>=8 && h<14);
-	    		horario = horario || (rs.getString("turno").equals("T") && h>=14 && h<=20);
-	    		if(turno && horario) {
-	    			id = rs.getInt("id_asociado_con");
-	    			stmt.executeUpdate(sqlAcceso);
-	    			for(String p:patentes) {
-	    				if(!est.contains(p)) {
-	    					sqlMultas = "INSERT INTO Multa(fecha,hora,patente,id_asociado_con) "
-	    							+ "VALUES('"+fecha+"','"+hora+"','"+p+"',"+id+");";
-	    					stmt.execute(sqlMultas);
-	    				}
-	    			}
-	    			sqlResultado = "SELECT m.numero, m.fecha, m.hora, a.calle, a.altura, m.patente, a.legajo " 
-	    					+ "FROM multa m NATURAL JOIN asociado_con a "
-	    					+ "WHERE a.calle LIKE '"+calle+"' AND a.altura = "+altura
-	    					+ " AND m.fecha = '"+fecha+"' AND m.hora = '"+hora+"' AND a.id_asociado_con = "+id+";";
-	    			rs = stmt.executeQuery(sqlResultado);
-	    			
-	    			
-	    			tabla.setVisible(true);
-	    	    	tabla.setSelectSql(sqlResultado); 
-	    	    	tabla.createColumnModelFromQuery();    	    
-	    	    	for (int i = 0; i < tabla.getColumnCount(); i++) {  		   		  
-	    	    		 if	 (tabla.getColumn(i).getType()==Types.TIME) tabla.getColumn(i).setType(Types.CHAR);
-	    	    	} 
-	    	   	    tabla.refresh();
-	    	   	    
-	    	   	    patentes.clear();
-	    		} else {
-	    			JOptionPane.showMessageDialog(null, "Error: No esta en turno.");
-	    		}
-	    	} else {
-	    		JOptionPane.showMessageDialog(null, "Error: No esta en su zona designada.");
-	    	}
+			int id = validarTurno(h,calle,altura,dia);
+			if (id>0) {
+				stmt.executeUpdate(sqlAcceso);
+    			for(String p:patentes) {
+    				if(!est.contains(p)) {
+    					sqlMultas = "INSERT INTO Multa(fecha,hora,patente,id_asociado_con) "
+    							+ "VALUES('"+fecha+"','"+hora+"','"+p+"',"+id+");";
+    					stmt.execute(sqlMultas);
+    				}
+    			}
+    			sqlResultado = "SELECT m.numero, m.fecha, m.hora, a.calle, a.altura, m.patente, a.legajo " 
+    					+ "FROM multa m NATURAL JOIN asociado_con a "
+    					+ "WHERE a.calle LIKE '"+calle+"' AND a.altura = "+altura
+    					+ " AND m.fecha = '"+fecha+"' AND m.hora = '"+hora+"' AND a.id_asociado_con = "+id+";";
+    			rs = stmt.executeQuery(sqlResultado);
+    			
+    			
+    			tabla.setVisible(true);
+    	    	tabla.setSelectSql(sqlResultado); 
+    	    	tabla.createColumnModelFromQuery();    	    
+    	    	for (int i = 0; i < tabla.getColumnCount(); i++) {  		   		  
+    	    		 if	 (tabla.getColumn(i).getType()==Types.TIME) tabla.getColumn(i).setType(Types.CHAR);
+    	    	} 
+    	   	    tabla.refresh();
+    	   	    
+    	   	    patentes.clear();
+			} else {
+				JOptionPane.showMessageDialog(null, "Error: No esta en turno.");
+			}
 	    } catch (SQLException ex) {
+	    	System.out.println("aqui");
 	    	System.out.println("SQLException: " + ex.getMessage());
 	    	System.out.println("SQLState: " + ex.getSQLState());
 	    	System.out.println("VendorError: " + ex.getErrorCode());
@@ -328,5 +322,28 @@ public class CargaInspector extends JFrame {
 			System.out.println("SQLState: " + ex.getSQLState());
 			System.out.println("VendorError: " + ex.getErrorCode());
 		}
+	}
+	
+	private int validarTurno(int hora, String calle, String altura, String dia) {
+		int id_asoc = -1;
+		boolean valido = false;
+		String sqlChequeo = "SELECT id_asociado_con, dia, turno FROM asociado_con "
+				+"WHERE legajo = "+legajo+" AND calle LIKE '"+calle+"' AND altura = "+altura+";";
+		String turno;
+		try {
+			Statement stmt = this.conexionBD.createStatement();
+	    	ResultSet rs = stmt.executeQuery(sqlChequeo);
+	    	while(rs.next() && !valido) {
+	    		turno = rs.getString("turno");
+	    		valido = rs.getString("dia").equals(dia);
+	    		valido = valido && (turno.equals("M") && hora>=8 && hora<14) || (turno.equals("T") && hora>=14 && hora<=20);
+	    		if (valido) id_asoc = rs.getInt("id_asociado_con");
+	    	}
+		} catch(SQLException ex) {			
+			System.out.println("SQLException: " + ex.getMessage());
+			System.out.println("SQLState: " + ex.getSQLState());
+			System.out.println("VendorError: " + ex.getErrorCode());
+		}
+		return id_asoc;
 	}
 }
