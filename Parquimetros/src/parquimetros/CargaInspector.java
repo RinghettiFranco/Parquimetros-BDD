@@ -247,10 +247,6 @@ public class CargaInspector extends JFrame {
     	
     	boolean turno;
     	boolean horario;
-    	/*
-	    String sqlChequeo = "SELECT id_asociado_con, dia, turno FROM asociado_con "
-							+"WHERE legajo = "+legajo+" AND calle LIKE '"+calle+"' AND altura = "+altura+";";
-	    */
 	    String sqlAcceso = "INSERT INTO Accede(legajo,id_parq,fecha,hora) "
 							+"VALUES ("+legajo+","+id_parq+",'"+fecha+"','"+hora+"');";
 	    String sqlEstacionados = "SELECT patente FROM estacionados "
