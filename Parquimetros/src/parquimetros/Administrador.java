@@ -34,7 +34,7 @@ import javax.swing.ListSelectionModel;
 
 
 @SuppressWarnings("serial")
-public class Administrador extends JFrame
+public class Administrador extends javax.swing.JInternalFrame
 {
    private JPanel pnlConsulta;
    private JTextArea txtConsulta;
@@ -92,12 +92,14 @@ public class Administrador extends JFrame
    private void initGUI(DBTable tabla) 
    {
       try {
-         setPreferredSize(new Dimension(850, 600));
-         this.setBounds(0, 0, 850, 600);
+         setPreferredSize(new Dimension(800, 600));
+         this.setBounds(0, 0, 800, 600);
          setVisible(true);
          this.setTitle("Admin");
+         setClosable(true);
+         setMaximizable(true);
          
-         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+         this.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
          
          this.addComponentListener(new ComponentAdapter() {
             public void componentHidden(ComponentEvent evt) {

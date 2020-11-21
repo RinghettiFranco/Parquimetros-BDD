@@ -7,6 +7,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.beans.PropertyVetoException;
 import java.sql.*;
 
 import javax.swing.JLabel;
@@ -16,12 +17,14 @@ import java.awt.Color;
 import javax.swing.JTextField;
 import javax.swing.JPasswordField;
 import javax.swing.JButton;
+import javax.swing.JDesktopPane;
 import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 import javax.swing.JTextArea;
 
 
 @SuppressWarnings("serial")
-public class IngresoInspector extends JFrame {
+public class IngresoInspector extends javax.swing.JInternalFrame {
 
 	private Connection conexionBD;
 	private JPanel contentPane;
@@ -29,9 +32,10 @@ public class IngresoInspector extends JFrame {
 	private JTextField edLegajo;
 	private JTextArea txEstado;
 	private CargaInspector carga;
-
-	public IngresoInspector() {
+	private JDesktopPane pane;
+	public IngresoInspector(JDesktopPane jdp) {
 		super();
+		pane=jdp;
 		setVisible(true);
 		crearInterfaz();
 		conectarBD();
@@ -39,8 +43,10 @@ public class IngresoInspector extends JFrame {
 	
 	private void crearInterfaz() {	
 		setTitle("Ingreso inspector");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
 		setBounds(100, 100, 450, 300);
+		setClosable(true);
+		setMaximizable(true);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
@@ -108,6 +114,7 @@ public class IngresoInspector extends JFrame {
 	            String clave = "inspector";
 	            String uriConexion = "jdbc:mysql://" + servidor + "/" + baseDatos + "?serverTimezone=America/Argentina/Buenos_Aires";
 	            this.conexionBD = DriverManager.getConnection(uriConexion, usuario, clave);
+	        
 	         }
 	         catch (SQLException ex) {
 	            JOptionPane.showMessageDialog(this,
@@ -133,21 +140,41 @@ public class IngresoInspector extends JFrame {
 		}
 	}
 	
+	private void clean() {
+		this.setVisible(false);
+		txEstado.setText("");
+		edContraseña.setText("");
+		edLegajo.setText("");
+		
+	}
+	
 	//Funciones oyentes
 	private void thisComponentHidden(ComponentEvent evt) {
 		desconectarBD();
+		clean();
 	}
 	
 	private void verificar(ActionEvent evt) {
 		try {
+			conectarBD();
 			Statement stmt = this.conexionBD.createStatement();
+			System.out.println(stmt.getFetchSize());
 			String pass = String.valueOf(edContraseña.getPassword());
 			int legajo = Integer.parseInt(edLegajo.getText());
 			String sql = "SELECT legajo, password FROM inspectores WHERE password=md5('"+pass+"') and legajo="+legajo;
 			ResultSet rs = stmt.executeQuery(sql);
 			if (rs.next()) {
 				carga = new CargaInspector(rs.getInt("legajo"));
-				carga.setVisible(true);
+				pane.add(carga);
+				try
+			      {
+					carga.setMaximum(true);
+					
+			      }
+			      catch (PropertyVetoException e) {}
+				 
+				carga.setVisible(true); 
+				clean();
 			} else {
 				txEstado.setForeground(new Color(255,0,0));
 				txEstado.setText("Ingreso fallido: \n Revise legajo y/o contraseña.");

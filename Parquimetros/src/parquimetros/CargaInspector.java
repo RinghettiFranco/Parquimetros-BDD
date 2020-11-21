@@ -17,15 +17,11 @@ import java.awt.Font;
 
 import java.awt.BorderLayout;
 import javax.swing.*;
-import javax.swing.JComboBox;
-import javax.swing.JButton;
-import javax.swing.JTextArea;
-import javax.swing.JFormattedTextField;
 import javax.swing.text.MaskFormatter;
 import javax.swing.border.EmptyBorder;
 
 @SuppressWarnings("serial")
-public class CargaInspector extends JFrame {
+public class CargaInspector extends javax.swing.JInternalFrame {
 	private JPanel contentPane;
 	private Connection conexionBD;
 	private ArrayList<String> patentes;
@@ -53,8 +49,10 @@ public class CargaInspector extends JFrame {
 
 	@SuppressWarnings("rawtypes")
 	private void crearInterfaz() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 800, 400);
+		setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
+		setClosable(true);
+		setMaximizable(true);
+		setBounds(0, 0, 800, 400);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		setContentPane(contentPane);
@@ -342,4 +340,6 @@ public class CargaInspector extends JFrame {
 		}
 		return id_asoc;
 	}
+
+	
 }
