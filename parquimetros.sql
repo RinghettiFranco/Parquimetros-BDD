@@ -174,6 +174,106 @@ FROM (Parquimetros p NATURAL JOIN Estacionamientos e NATURAL JOIN Tarjetas t)
 WHERE (e.fecha_sal IS NULL) AND (e.hora_sal IS NULL);
 
 #-----------------------------------------------------------------------------------------------------------------------
+#	Creación de la transacción conectar para simular la apertura/cierre de un estacionamiento
+#-----------------------------------------------------------------------------------------------------------------------
+
+delimiter !
+CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
+	BEGIN
+		DECLARE tDiff TIME;
+		DECLARE tiempo INT;
+		DECLARE mtDiff INT;
+		DECLARE saldo INT;
+		DECLARE nsaldo INT;
+		DECLARE tarifa INT;
+		DECLARE descuento DECIMAL(3,2);
+		#DECLARE EXIT HANDLER FOR SQLEXCEPTION
+		#	BEGIN 
+		#		SELECT 'Error: transacción revertida.' AS operacion;
+		#		ROLLBACK;
+		#	END;
+		START TRANSACTION;
+			#EXISTEN PARQUIMETRO CON ID:id_parq Y TARJETA CON ID:id_tarjeta
+			IF EXISTS(SELECT * FROM Parquimetros p WHERE p.id_parq = id_parq) AND
+			   EXISTS(SELECT * FROM Tarjetas t WHERE t.id_tarjeta = id_tarjeta)THEN
+			    #EXISTE UN ESTACIONAMIENTO ABIERTO EN ESE PARQUIMETRO CON ESA TARJETA
+				IF EXISTS (SELECT * FROM Estacionamientos e 
+						   WHERE e.id_parq = id_parq AND e.id_tarjeta = id_tarjeta AND
+								 e.hora_sal IS NULL AND e.fecha_sal IS NULL) THEN
+					#CIERRE	
+					#DIFERENCIA DE TIEMPO ENTRE ACTUAL Y ENTRADA
+					SELECT TIMEDIFF(CURRENT_TIMESTAMP,TIMESTAMP(e.fecha_ent,e.hora_ent)) INTO tDiff 
+					FROM Estacionamientos e 
+					WHERE (e.id_parq = id_parq AND e.id_tarjeta = id_tarjeta AND
+						  e.hora_sal IS NULL AND e.fecha_sal IS NULL) 
+					FOR UPDATE;
+					
+					#CONVIERTO tDiff DE FORMATO time A MINUTOS (SEGUNDOS/60) EN mtDiff
+					SET mtDiff = TIME_TO_SEC(tDiff)/60;
+					
+					#RECUPERO LA TARIFA DE LA UBICACION DEL PARQUIMETRO
+					SELECT u.tarifa INTO tarifa 
+					FROM (Parquimetros p NATURAL JOIN Ubicaciones u)
+					WHERE (p.id_parq = id_parq);
+					
+					#CALCULO EL SALDO RESULTANTE DEL CIERRE DEL ESTACIONAMIENTO
+					SELECT (t.saldo-(mtDiff*tarifa*(1-tp.descuento))) INTO nsaldo 
+					FROM (Tarjetas t NATURAL JOIN Tipos_tarjeta tp)
+					WHERE (t.id_tarjeta = id_tarjeta);
+					
+					#ACTUALIZO EL ESTACIONAMIENTO CERRANDOLO
+					UPDATE Estacionamientos e
+					SET e.fecha_sal = CURRENT_DATE, e.hora_sal = TIME_FORMAT(CURRENT_TIME,'%T')
+					WHERE (e.id_parq = id_parq AND e.id_tarjeta = id_tarjeta AND 
+						   e.hora_sal IS NULL AND e.fecha_sal IS NULL);
+					
+					#ACTUALIZO EL SALDO DE LA TARJETA
+					UPDATE Tarjetas t
+					SET t.saldo = nsaldo
+					WHERE t.id_tarjeta=id_tarjeta;
+					
+					#RETORNO EL RESULTADO
+					SELECT 'Cierre' AS operacion, mtDiff AS tiempo, nsaldo AS saldo; 
+				ELSE
+					#APERTURA
+					#RECUPERO LA TARIFA DE LA UBICACION DEL PARQUIMETRO
+					SELECT u.tarifa INTO tarifa 
+					FROM (Parquimetros p NATURAL JOIN Ubicaciones u)
+					WHERE (p.id_parq = id_parq);
+					
+					#RECUPERO EL SALDO Y EL DESCUENTO DE LA TARJETA
+					SELECT tp.descuento INTO descuento 
+					FROM (Tarjetas t NATURAL JOIN Tipos_tarjeta tp)
+					WHERE t.id_tarjeta = id_tarjeta;
+
+					SELECT t.saldo INTO saldo 
+					FROM (Tarjetas t NATURAL JOIN Tipos_tarjeta tp)
+					WHERE t.id_tarjeta = id_tarjeta;
+					
+					#SI TIENE SALDO COMO PARA ABRIR UN ESTACIONAMIENTO
+					IF (saldo>0) THEN
+						#CALCULO EL TIEMPO QUE PUEDE ESTAR
+						SET tiempo = (saldo/(tarifa*(1-descuento)));
+						
+						#ABRO EL ESTACIONAMIENTO
+						INSERT INTO Estacionamientos(id_tarjeta, id_parq, fecha_ent, hora_ent,fecha_sal, hora_sal)
+							VALUES (id_tarjeta,id_parq,CURRENT_DATE,TIME_FORMAT(CURRENT_TIME,'%T'),NULL,NULL);
+						
+						SELECT 'Apertura' AS operacion, 'Exitosa' AS estado, tiempo AS tiempo_disponible;
+					ELSE
+						#NO SE PUDO ABRIR EL ESTACIONAMIENTO
+						SELECT 'Apertura' AS operacion, 'Fallida' AS estado, 0 AS tiempo_disponible;
+					END IF;
+				END IF;
+			ELSE
+				#NO EXISTEN PARQUIMETRO CON ID:id_parq Y TARJETA CON ID:id_tarjeta
+				SELECT 'Error: datos no existentes en la bdd.' AS operacion;
+			END IF;
+		COMMIT; 
+	END; !
+delimiter ;
+
+#-----------------------------------------------------------------------------------------------------------------------
 #	Creación de los usuarios y asignación de sus permisos
 #-----------------------------------------------------------------------------------------------------------------------
 
@@ -205,6 +305,18 @@ GRANT SELECT ON parquimetros.Multa TO 'inspector'@'localhost';
 GRANT INSERT ON parquimetros.Multa TO 'inspector'@'localhost';
 GRANT INSERT ON parquimetros.Accede TO 'inspector'@'localhost';
 
-
-
+#Creacion del usuario parquímetros encargado a permitir el acceso de los mismos a la base de datos,
+# para abrir/cerrar estacionamientos
+#Debe tener privilegios para:
+#	+Ejecutar el stored procedure conectar.
+#	+Acceder a tarjetas.
+#	+Acceder a ubicaciónes.
+#	+Acceder a parquímetros.
+#	+Acceder a conductores.
+CREATE USER 'parquimetros'@'localhost' IDENTIFIED BY 'parq';
+GRANT SELECT ON parquimetros.Tarjetas TO 'parquimetros'@'localhost';
+GRANT SELECT ON parquimetros.Ubicaciones TO 'parquimetros'@'localhost';
+GRANT SELECT ON parquimetros.Parquimetros TO 'parquimetros'@'localhost';
+GRANT SELECT ON parquimetros.Conductores TO 'parquimetros'@'localhost';
+GRANT EXECUTE ON PROCEDURE parquimetros.conectar TO 'parquimetros'@'localhost';
 
