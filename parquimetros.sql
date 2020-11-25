@@ -229,7 +229,7 @@ CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 					
 					#ACTUALIZO EL SALDO DE LA TARJETA
 					UPDATE Tarjetas t
-					SET t.saldo = nsaldo
+					SET t.saldo = GREATEST(nsaldo,-999.99)
 					WHERE t.id_tarjeta=id_tarjeta;
 					
 					#RETORNO EL RESULTADO
