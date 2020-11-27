@@ -23,9 +23,10 @@ import java.beans.PropertyVetoException;
 
 @SuppressWarnings("serial")
 public class Inicio extends javax.swing.JFrame {
-	private JButton btnInspector,btnAdmin;
+	private JButton btnInspector,btnAdmin,btnParqui;
 	private Login login;
 	private IngresoInspector inspector;
+	private VentanaParquimetro parquimetro;
 	private JDesktopPane jDesktopPane1;
 
 	public static void main(String[]args) 
@@ -50,6 +51,11 @@ public class Inicio extends javax.swing.JFrame {
 	      inspector.setLocation(0, -12);
 	      this.inspector.setVisible(false);
 	      this.jDesktopPane1.add(this.inspector);  
+	      
+	      this.parquimetro = new VentanaParquimetro();
+	      parquimetro.setLocation(0, 0);
+	      this.parquimetro.setVisible(false);
+	      this.jDesktopPane1.add(this.parquimetro);  
 	      
 		}
 	
@@ -79,7 +85,7 @@ public class Inicio extends javax.swing.JFrame {
 		}
 		{btnInspector = new JButton("INGRESO INSPECTOR");
 		btnInspector.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		btnInspector.setBounds(0, 72, 384, 97);
+		btnInspector.setBounds(0, 100,200, 100);
 		jDesktopPane1.add(btnInspector);}
 		btnInspector.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {
@@ -93,11 +99,26 @@ public class Inicio extends javax.swing.JFrame {
          }
 		});
 		
+		{btnParqui = new JButton("INGRESO PARQUIMETRO");
+		btnParqui.setFont(new Font("Tahoma", Font.PLAIN, 15));
+		btnParqui.setBounds(0, 200, 200, 100);
+		jDesktopPane1.add(btnParqui);}
+		btnParqui.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent evt) {
+				try
+			      {
+			       parquimetro.setMaximum(true);
+			      }
+			      catch (PropertyVetoException e) {}
+			      parquimetro.setVisible(true); 
+				
+         }
+		});
 		
 		
 		{ btnAdmin = new JButton("INGRESO ADMINISTRADOR");
 		btnAdmin.setFont(new Font("Tahoma", Font.PLAIN, 15));
-		btnAdmin.setBounds(0, 164, 384, 97);
+		btnAdmin.setBounds(0, 300, 200, 100);
 		jDesktopPane1.add(btnAdmin);
 		}btnAdmin.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent evt) {

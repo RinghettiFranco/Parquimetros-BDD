@@ -164,6 +164,19 @@ CREATE TABLE Multa (
     ON DELETE RESTRICT ON UPDATE CASCADE
 )ENGINE=InnoDB;
 
+#Tabla correspondiente a ventas(id_tarjeta,saldo,tipo_tarjeta,fecha,hora)
+CREATE TABLE ventas (
+	
+	id_tarjeta INT NOT NULL,
+	saldo DECIMAL(5,2) NOT NULL,
+	tipo_tarjeta VARCHAR(20) NOT NULL,
+	fecha DATE NOT NULL,
+	hora TIME NOT NULL,
+	CONSTRAINT pk_ventas PRIMARY KEY (id_tarjeta)
+	
+)ENGINE=InnoDB;
+
+
 #-----------------------------------------------------------------------------------------------------------------------
 #	Creación de la vista estacionados para ocultar la estructura de la bdd al inspector
 #-----------------------------------------------------------------------------------------------------------------------
@@ -331,3 +344,16 @@ GRANT SELECT ON parquimetros.Parquimetros TO 'parquimetros'@'localhost';
 GRANT SELECT ON parquimetros.Conductores TO 'parquimetros'@'localhost';
 GRANT EXECUTE ON PROCEDURE parquimetros.conectar TO 'parquimetros'@'localhost';
 
+#-----------------------------------------------------------------------------------------------------------------------
+#	Creación del trigger que lleva cuenta de las ventas realizadas.
+#-----------------------------------------------------------------------------------------------------------------------
+DELIMITER !
+CREATE TRIGGER ventas_realizadas
+AFTER INSERT ON tarjetas
+FOR EACH ROW
+BEGIN
+INSERT INTO ventas(id_tarjeta,saldo,tipo_tarjeta,fecha,hora)
+         VALUES( NEW.id_tarjeta, NEW.saldo, NEW.tipo, curdate(), curtime()); 
+ 
+end;!
+DELIMITER ;
