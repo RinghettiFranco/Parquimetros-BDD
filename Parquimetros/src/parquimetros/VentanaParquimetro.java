@@ -5,9 +5,6 @@ import java.util.*;
 
 import java.sql.*;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 
 import quick.dbtable.*;
 
@@ -17,32 +14,26 @@ import java.awt.Font;
 
 import java.awt.BorderLayout;
 import javax.swing.*;
-import javax.swing.text.MaskFormatter;
 import javax.swing.border.EmptyBorder;
 
 @SuppressWarnings("serial")
 public class VentanaParquimetro extends javax.swing.JInternalFrame {
 	private JPanel contentPane;
 	private Connection conexionBD;
-	private ArrayList<String> patentes;
-	private ArrayList<String> exist;
- 	private JFormattedTextField edPatentes;
 	private JTextArea txInfo;
-	private DBTable tabla;
 	@SuppressWarnings("rawtypes")
 	private JComboBox cbUbicaciones;
 	@SuppressWarnings("rawtypes")
 	private JComboBox cbTarjetas;
 	@SuppressWarnings("rawtypes")
 	private JComboBox cbParquimetros;
-	private int legajo;
-	
+		
 
 	public VentanaParquimetro() {
 		super();
-		tabla = new DBTable();
+		conectarBD();
 		crearInterfaz();
-		tabla.setEditable(false);
+		
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -62,41 +53,30 @@ public class VentanaParquimetro extends javax.swing.JInternalFrame {
 		
 		cbUbicaciones = new JComboBox();
 		cbUbicaciones.setFont(new Font("Tahoma", Font.PLAIN, 16));
-		cbUbicaciones.setBounds(10, 11, 367, 22);
+		cbUbicaciones.setBounds(10, 31, 367, 22);
 		pnCarga.add(cbUbicaciones);
 		
 		cbTarjetas = new JComboBox();
 		cbTarjetas.setFont(new Font("Tahoma", Font.PLAIN, 16));
-		cbTarjetas.setBounds(199, 44, 178, 22);
+		cbTarjetas.setBounds(198, 77, 178, 22);
 		pnCarga.add(cbTarjetas);
 		
 		cbParquimetros = new JComboBox();
 		cbParquimetros.setFont(new Font("Tahoma", Font.PLAIN, 16));
-		cbParquimetros.setBounds(10, 44, 178, 22);
+		cbParquimetros.setBounds(10, 77, 178, 22);
 		pnCarga.add(cbParquimetros);
-		
-		JButton btEjecutar = new JButton("Ejecutar");
-		btEjecutar.setFont(new Font("Tahoma", Font.PLAIN, 16));
-		btEjecutar.setBounds(268, 77, 109, 22);
-		pnCarga.add(btEjecutar);
-		btEjecutar.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent evt) {
-                aceptar();
-            }
-		});
 		
 		JButton btAceptar = new JButton("Aceptar");
 		btAceptar.setFont(new Font("Tahoma", Font.PLAIN, 16));
 		btAceptar.setBounds(139, 317, 109, 22);
 		pnCarga.add(btAceptar);
+		btAceptar.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                aceptar();
+            }
+		});
 		
-		try {
-			edPatentes = new JFormattedTextField(new MaskFormatter("UUU###"));
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
-		edPatentes.setBounds(10, 77, 248, 22);
-		pnCarga.add(edPatentes);
+		
 		
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setBounds(10, 110, 367, 198);
@@ -107,31 +87,22 @@ public class VentanaParquimetro extends javax.swing.JInternalFrame {
 		txInfo.setFont(new Font("Tahoma", Font.PLAIN, 20));
 		txInfo.setEditable(false);
 		txInfo.setColumns(4);
+		
+		JLabel lblUbicacion = new JLabel("Ubicacion:");
+		lblUbicacion.setBounds(30, 11, 46, 14);
+		pnCarga.add(lblUbicacion);
+		
+		JLabel lblParquimetro = new JLabel("Parquimetro:");
+		lblParquimetro.setBounds(30, 63, 82, 14);
+		pnCarga.add(lblParquimetro);
+		
+		JLabel lblTarjeta = new JLabel("Tarjeta:");
+		lblTarjeta.setBounds(218, 63, 46, 14);
+		pnCarga.add(lblTarjeta);
 	
-		JPanel pnResultado = new JPanel();
-		contentPane.add(pnResultado);
-		pnResultado.setLayout(new BorderLayout(0, 0));
-		
-		pnResultado.add(tabla, BorderLayout.CENTER);
-		tabla.setVisible(false);
-		String driver ="com.mysql.cj.jdbc.Driver";
-    	String servidor = "localhost:3306";
-    	String baseDatos = "parquimetros"; 
-    	String usuario = "parquimetros";
-    	String clave = "parq";
-        String uriConexion = "jdbc:mysql://" + servidor + "/" + 
-    	                     baseDatos +"?serverTimezone=America/Argentina/Buenos_Aires";
-		try {
-			tabla.connectDatabase(driver, uriConexion, usuario, clave);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		conexionBD = tabla.getConnection();
-		
+	
 		cargarUbicaciones();
-		
+		cargarTarjetas();
 		cbUbicaciones.addItemListener(new ItemListener() {
 			public void itemStateChanged(ItemEvent itemEvent) {
 				cargarTarjetas();
@@ -226,78 +197,7 @@ public class VentanaParquimetro extends javax.swing.JInternalFrame {
 		return id_tarj;
 	}
 	
-	/*private void ejecutar() {
 		
-	    
-	    try {
-	    	Statement stmt = this.conexionBD.createStatement();
-	    	ResultSet rs;
-	    	rs = stmt.executeQuery(sqlEjecutar);
-			//ArrayList<String> est = new ArrayList<String>();
-			while(rs.next()) {
-				//est.add(rs.getString("patente"));
-			}
-				
-    			tabla.setVisible(true);
-    	    	tabla.setSelectSql(sqlEjecutar); 
-    	    	tabla.createColumnModelFromQuery();    	    
-    	    	for (int i = 0; i < tabla.getColumnCount(); i++) {  		   		  
-    	    		 if	 (tabla.getColumn(i).getType()==Types.TIME) tabla.getColumn(i).setType(Types.CHAR);
-    	    	} 
-    	   	    tabla.refresh();
-    	   	    
-    	   	    
-			} 
-	    catch(Exception e) {}
-	    
-	}*/
-
-	private void ejecutar()
-	   {
-	      try
-	      { // tabla.setRowCountSql(rowCountSql);
-	    	 int id_parq=seleccionarParquimetro();
-	  		 int id_tarj=seleccionarTarjeta();
-	  	     String sqlEjecutar = "call conectar(1,1);";
-	  	     
-	  	    Connection conexionBD=tabla.getConnection();
-	         Statement stmt = conexionBD.createStatement();
-	         stmt.execute(sqlEjecutar);
-	    	  
-	    	 	    	  
-	    	   tabla.createColumnModelFromQuery();    	    
-	    	  for (int i = 0; i < tabla.getColumnCount(); i++)
-	    	  { // para que muestre correctamente los valores de tipo TIME (hora)  		   		  
-	    		 if	 (tabla.getColumn(i).getType()==Types.TIME)  
-	    		 {    		 
-	    		    tabla.getColumn(i).setType(Types.CHAR);  
-	  	       	 }
-	    		 // cambiar el formato en que se muestran los valores de tipo DATE
-	    		 if	 (tabla.getColumn(i).getType()==Types.DATE)
-	    		 {
-	    		    tabla.getColumn(i).setDateFormat("dd/MM/YYYY");
-	    		 }
-	          }  
-	    	   tabla.refresh();
-	    	  
-	    	  
-	    	  
-	       }
-	      catch (SQLException ex)
-	      {
-	         System.out.println("SQLException: " + ex.getMessage());
-	         System.out.println("SQLState: " + ex.getSQLState());
-	         System.out.println("VendorError: " + ex.getErrorCode());
-	         JOptionPane.showMessageDialog(this,
-	                                       ex.getMessage() + "\n", 
-	                                       "Error al ejecutar la consulta.",
-	                                       JOptionPane.ERROR_MESSAGE);
-	         
-	      }
-	      
-	   }
-
-	
 	private void aceptar() {
 		try{
 			if(cbParquimetros.getSelectedItem()!=null) {
@@ -326,10 +226,31 @@ public class VentanaParquimetro extends javax.swing.JInternalFrame {
 				}
 			}
 	    } catch (SQLException ex) {
-	    	System.out.println("error en aceptar");	    	
+	    		    	
 	    	System.out.println("SQLException: " + ex.getMessage());
 	    	System.out.println("SQLState: " + ex.getSQLState());
 	    	System.out.println("VendorError: " + ex.getErrorCode());
+		}
+	}	
+	private void conectarBD() {
+		if (this.conexionBD == null) {               
+			try {
+				String servidor = "localhost:3306";
+				String baseDatos = "parquimetros";
+	            String usuario = "parquimetros";
+	            String clave = "parq";
+	            String uriConexion = "jdbc:mysql://" + servidor + "/" + baseDatos + "?serverTimezone=America/Argentina/Buenos_Aires";
+	            this.conexionBD = DriverManager.getConnection(uriConexion, usuario, clave);
+	        
+	         }
+	         catch (SQLException ex) {
+	            JOptionPane.showMessageDialog(this,
+	             "Se produjo un error al intentar conectarse a la base de datos.\n" + ex.getMessage(),
+	              "Error", JOptionPane.ERROR_MESSAGE);
+	            System.out.println("SQLException: " + ex.getMessage());
+	            System.out.println("SQLState: " + ex.getSQLState());
+	            System.out.println("VendorError: " + ex.getErrorCode());
+	         }
 		}
 	}	
 }

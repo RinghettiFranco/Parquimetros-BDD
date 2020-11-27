@@ -36,8 +36,10 @@ private JPasswordField passwordField;
 private DBTable tabla;
 private JLabel lblAviso,labelUsuario,labelContra;
 private JDesktopPane pane;	
-	public Login(JDesktopPane jdp) {
+	
+public Login(JDesktopPane jdp) {
 		super();
+		
 		initGUI();
 		pane=jdp;
 		
@@ -180,6 +182,8 @@ private JDesktopPane pane;
 	       //establece una conexión con la  B.D. "parquimetros"  usando directamante una tabla DBTable    
 	            tabla.connectDatabase(driver, uriConexion, usuario, clave);
 	            administrador=new Administrador(tabla);
+	           
+
 	            try
 			      {
 	               pane.add(administrador);

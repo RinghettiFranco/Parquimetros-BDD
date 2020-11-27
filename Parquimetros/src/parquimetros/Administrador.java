@@ -46,13 +46,14 @@ public class Administrador extends javax.swing.JInternalFrame
    private DefaultListModel<String> listmodel,listmodelAtributos;
    private Connection c;
    private Statement stmt;
-   
+   private Inicio inicio;
 
    
    
    public Administrador(DBTable tabla) 
    {
 	   super();
+	  
 	  c= tabla.getConnection();
       IniciarListaTablas();
       initGUI(tabla);

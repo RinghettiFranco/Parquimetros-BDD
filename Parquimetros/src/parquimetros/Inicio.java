@@ -92,6 +92,7 @@ public class Inicio extends javax.swing.JFrame {
 				try
 			      {
 			       inspector.setMaximum(true);
+			       
 			      }
 			      catch (PropertyVetoException e) {}
 			      inspector.setVisible(true); 
@@ -108,6 +109,7 @@ public class Inicio extends javax.swing.JFrame {
 				try
 			      {
 			       parquimetro.setMaximum(true);
+			       
 			      }
 			      catch (PropertyVetoException e) {}
 			      parquimetro.setVisible(true); 
@@ -125,7 +127,7 @@ public class Inicio extends javax.swing.JFrame {
 				try
 			      {
 			       login.setMaximum(false);
-			      }
+			       			      }
 			      catch (PropertyVetoException e) {}
 			      login.setVisible(true); 
 				
@@ -141,5 +143,5 @@ public class Inicio extends javax.swing.JFrame {
 		
 	}
 
-
+	
 }
