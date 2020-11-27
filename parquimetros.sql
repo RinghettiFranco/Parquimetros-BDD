@@ -180,18 +180,17 @@ WHERE (e.fecha_sal IS NULL) AND (e.hora_sal IS NULL);
 delimiter !
 CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 	BEGIN
-		DECLARE tDiff TIME;
 		DECLARE tiempo INT;
 		DECLARE mtDiff INT;
 		DECLARE saldo INT;
 		DECLARE nsaldo INT;
 		DECLARE tarifa INT;
 		DECLARE descuento DECIMAL(3,2);
-		#DECLARE EXIT HANDLER FOR SQLEXCEPTION
-		#	BEGIN 
-		#		SELECT 'Error: transacción revertida.' AS operacion;
-		#		ROLLBACK;
-		#	END;
+		DECLARE EXIT HANDLER FOR SQLEXCEPTION
+			BEGIN 
+				SELECT 'Error: transacción revertida.' AS operacion;
+				ROLLBACK;
+			END;
 		START TRANSACTION;
 			#EXISTEN PARQUIMETRO CON ID:id_parq Y TARJETA CON ID:id_tarjeta
 			IF EXISTS(SELECT * FROM Parquimetros p WHERE p.id_parq = id_parq) AND
@@ -202,14 +201,11 @@ CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 								 e.hora_sal IS NULL AND e.fecha_sal IS NULL) THEN
 					#CIERRE	
 					#DIFERENCIA DE TIEMPO ENTRE ACTUAL Y ENTRADA
-					SELECT TIMEDIFF(CURRENT_TIMESTAMP,TIMESTAMP(e.fecha_ent,e.hora_ent)) INTO tDiff 
+					SELECT TIMESTAMPDIFF(MINUTE,TIMESTAMP(e.fecha_ent,e.hora_ent),CURRENT_TIMESTAMP) INTO mtDiff 
 					FROM Estacionamientos e 
 					WHERE (e.id_parq = id_parq AND e.id_tarjeta = id_tarjeta AND
 						  e.hora_sal IS NULL AND e.fecha_sal IS NULL) 
 					FOR UPDATE;
-					
-					#CONVIERTO tDiff DE FORMATO time A MINUTOS (SEGUNDOS/60) EN mtDiff
-					SET mtDiff = TIME_TO_SEC(tDiff)/60;
 					
 					#RECUPERO LA TARIFA DE LA UBICACION DEL PARQUIMETRO
 					SELECT u.tarifa INTO tarifa 
@@ -221,6 +217,8 @@ CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 					FROM (Tarjetas t NATURAL JOIN Tipos_tarjeta tp)
 					WHERE (t.id_tarjeta = id_tarjeta);
 					
+					SET nsaldo = GREATEST(nsaldo,-999.99);
+					
 					#ACTUALIZO EL ESTACIONAMIENTO CERRANDOLO
 					UPDATE Estacionamientos e
 					SET e.fecha_sal = CURRENT_DATE, e.hora_sal = TIME_FORMAT(CURRENT_TIME,'%T')
@@ -229,7 +227,7 @@ CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 					
 					#ACTUALIZO EL SALDO DE LA TARJETA
 					UPDATE Tarjetas t
-					SET t.saldo = GREATEST(nsaldo,-999.99)
+					SET t.saldo = nsaldo
 					WHERE t.id_tarjeta=id_tarjeta;
 					
 					#RETORNO EL RESULTADO
