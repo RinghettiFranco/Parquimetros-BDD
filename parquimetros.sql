@@ -217,8 +217,6 @@ CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 					FROM (Tarjetas t NATURAL JOIN Tipos_tarjeta tp)
 					WHERE (t.id_tarjeta = id_tarjeta);
 					
-					SET nsaldo = GREATEST(nsaldo,-999.99);
-					
 					#ACTUALIZO EL ESTACIONAMIENTO CERRANDOLO
 					UPDATE Estacionamientos e
 					SET e.fecha_sal = CURRENT_DATE, e.hora_sal = TIME_FORMAT(CURRENT_TIME,'%T')
@@ -227,11 +225,11 @@ CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 					
 					#ACTUALIZO EL SALDO DE LA TARJETA
 					UPDATE Tarjetas t
-					SET t.saldo = nsaldo
+					SET t.saldo = GREATEST(nsaldo,-999.99)
 					WHERE t.id_tarjeta=id_tarjeta;
 					
 					#RETORNO EL RESULTADO
-					SELECT 'Cierre' AS operacion, mtDiff AS tiempo, nsaldo AS saldo; 
+					SELECT 'Cierre' AS operacion, mtDiff AS tiempo, GREATEST(nsaldo,-999.99) AS saldo; 
 				ELSE
 					#APERTURA
 					#RECUPERO LA TARIFA DE LA UBICACION DEL PARQUIMETRO
