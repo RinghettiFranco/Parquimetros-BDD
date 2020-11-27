@@ -26,7 +26,7 @@ public class CargaInspector extends javax.swing.JInternalFrame {
 	private Connection conexionBD;
 	private ArrayList<String> patentes;
 	private ArrayList<String> exist;
- 	private JFormattedTextField edPatentes;
+ 	private JTextField edPatentes;
 	private JTextArea txPatentes;
 	@SuppressWarnings("rawtypes")
 	private JComboBox cbCalles;
@@ -92,11 +92,7 @@ public class CargaInspector extends javax.swing.JInternalFrame {
 		btAceptar.setBounds(139, 317, 109, 22);
 		pnCarga.add(btAceptar);
 		
-		try {
-			edPatentes = new JFormattedTextField(new MaskFormatter("UUU###"));
-		} catch (ParseException e) {
-			e.printStackTrace();
-		}
+	    edPatentes = new JTextField();
 		edPatentes.setBounds(10, 77, 248, 22);
 		pnCarga.add(edPatentes);
 		
@@ -223,7 +219,7 @@ public class CargaInspector extends javax.swing.JInternalFrame {
 				String pat = txPatentes.getText();
 				txPatentes.setText(pat + edPatentes.getText() + "\n");
 			} else {
-				JOptionPane.showMessageDialog(null, "Error: no existe automovil con esa patente.");
+				JOptionPane.showMessageDialog(null, "Error: Patente inválida.");
 			}
 		} else {
 			JOptionPane.showMessageDialog(null, "La patente ya esta en la lista.");
