@@ -193,7 +193,6 @@ WHERE (e.fecha_sal IS NULL) AND (e.hora_sal IS NULL);
 delimiter !
 CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 	BEGIN
-		DECLARE parq INT;
 		DECLARE tiempo INT;
 		DECLARE mtDiff INT;
 		DECLARE saldo INT;
@@ -205,36 +204,26 @@ CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 				SELECT 'Error: transacción revertida.' AS operacion;
 				ROLLBACK;
 			END;
-		START TRANSACTION;	
+		START TRANSACTION;
 			#EXISTEN PARQUIMETRO CON ID:id_parq Y TARJETA CON ID:id_tarjeta
 			IF EXISTS(SELECT * FROM Parquimetros p WHERE p.id_parq = id_parq) AND
 			   EXISTS(SELECT * FROM Tarjetas t WHERE t.id_tarjeta = id_tarjeta)THEN
-			    SET parq = id_parq;
-				#CIERRA EL ESTACIONAMIENTO YA SEA EN EL PARQUIMETRO O EN EL QUE YA TENÍA ABIERTO
+			    #EXISTE UN ESTACIONAMIENTO ABIERTO EN ESE PARQUIMETRO CON ESA TARJETA
 				IF EXISTS (SELECT * FROM Estacionamientos e 
-						   WHERE e.id_tarjeta = id_tarjeta AND
+						   WHERE e.id_parq = id_parq AND e.id_tarjeta = id_tarjeta AND
 								 e.hora_sal IS NULL AND e.fecha_sal IS NULL) THEN
-					#SI TIENE UN ESTACIONAMIENTO ABIERTO CON OTRA TARJETA
-					IF EXISTS(SELECT * FROM Estacionamientos e 
-						WHERE e.id_parq <> id_parq AND e.id_tarjeta = id_tarjeta AND
-							  e.hora_sal IS NULL AND e.fecha_sal IS NULL) THEN
-						SELECT e.id_parq INTO parq 
-						FROM estacionamientos e
-						WHERE e.id_parq <> id_parq AND e.id_tarjeta = id_tarjeta AND 
-					          e.hora_sal IS NULL AND e.fecha_sal IS NULL;
-					END IF;	
 					#CIERRE	
 					#DIFERENCIA DE TIEMPO ENTRE ACTUAL Y ENTRADA
 					SELECT TIMESTAMPDIFF(MINUTE,TIMESTAMP(e.fecha_ent,e.hora_ent),CURRENT_TIMESTAMP) INTO mtDiff 
 					FROM Estacionamientos e 
-					WHERE (e.id_parq = parq AND e.id_tarjeta = id_tarjeta AND
+					WHERE (e.id_parq = id_parq AND e.id_tarjeta = id_tarjeta AND
 						  e.hora_sal IS NULL AND e.fecha_sal IS NULL) 
 					FOR UPDATE;
 					
 					#RECUPERO LA TARIFA DE LA UBICACION DEL PARQUIMETRO
 					SELECT u.tarifa INTO tarifa 
 					FROM (Parquimetros p NATURAL JOIN Ubicaciones u)
-					WHERE (p.id_parq = parq);
+					WHERE (p.id_parq = id_parq);
 					
 					#CALCULO EL SALDO RESULTANTE DEL CIERRE DEL ESTACIONAMIENTO
 					SELECT (t.saldo-(mtDiff*tarifa*(1-tp.descuento))) INTO nsaldo 
@@ -244,7 +233,7 @@ CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 					#ACTUALIZO EL ESTACIONAMIENTO CERRANDOLO
 					UPDATE Estacionamientos e
 					SET e.fecha_sal = CURRENT_DATE, e.hora_sal = TIME_FORMAT(CURRENT_TIME,'%T')
-					WHERE (e.id_parq = parq AND e.id_tarjeta = id_tarjeta AND 
+					WHERE (e.id_parq = id_parq AND e.id_tarjeta = id_tarjeta AND 
 						   e.hora_sal IS NULL AND e.fecha_sal IS NULL);
 					
 					#ACTUALIZO EL SALDO DE LA TARJETA
@@ -253,11 +242,7 @@ CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 					WHERE t.id_tarjeta=id_tarjeta;
 					
 					#RETORNO EL RESULTADO
-					IF (parq<>id_parq) THEN
-						SELECT 'Cierre: Forzado' AS operacion, mtDiff AS tiempo, GREATEST(nsaldo,-999.99) AS saldo;
-					ELSE
-						SELECT 'Cierre' AS operacion, mtDiff AS tiempo, GREATEST(nsaldo,-999.99) AS saldo; 
-					END IF;
+					SELECT 'Cierre' AS operacion, mtDiff AS tiempo, GREATEST(nsaldo,-999.99) AS saldo; 
 				ELSE
 					#APERTURA
 					#RECUPERO LA TARIFA DE LA UBICACION DEL PARQUIMETRO
