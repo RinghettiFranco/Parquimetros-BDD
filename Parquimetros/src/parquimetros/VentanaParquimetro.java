@@ -211,7 +211,7 @@ public class VentanaParquimetro extends javax.swing.JInternalFrame {
 	private int seleccionarParquimetro() {
 		int id_parq=0;
 		if(cbParquimetros.getSelectedItem()!=null) {
-		String s = cbParquimetros.getSelectedItem().toString();
+			String s = cbParquimetros.getSelectedItem().toString();
 		int i = s.indexOf('-');
 		id_parq = Integer.parseInt(s.substring(0,i));}
 		return id_parq;
@@ -220,7 +220,7 @@ public class VentanaParquimetro extends javax.swing.JInternalFrame {
 	private int seleccionarTarjeta() {
 		int id_tarj=0;
 		if(cbTarjetas.getSelectedItem()!=null) {
-		String s = cbTarjetas.getSelectedItem().toString();
+			String s = cbTarjetas.getSelectedItem().toString();
 		int i = s.indexOf('-');
 		id_tarj = Integer.parseInt(s.substring(0,i));}
 		return id_tarj;
@@ -299,32 +299,39 @@ public class VentanaParquimetro extends javax.swing.JInternalFrame {
 
 	
 	private void aceptar() {
-		
 		try{
-		tabla.cleanup();
-		int id_parq=seleccionarParquimetro(); 
-		int id_tarj=seleccionarTarjeta();
- 	     
-    	String sqlCallConexion = "call conectar("+id_tarj+","+id_parq+");";
-	     
-	  	tabla.setVisible(true);
-    	tabla.setSelectSql(sqlCallConexion); 
-    	tabla.createColumnModelFromQuery();    	    
-    	    	for (int i = 0; i < tabla.getColumnCount(); i++) {  		   		  
-    	    		 if	 (tabla.getColumn(i).getType()==Types.TIME) tabla.getColumn(i).setType(Types.CHAR);
-    	    	} 
-    	   	    tabla.refresh();
-    	   	    
-    	   	   
-			
+			if(cbParquimetros.getSelectedItem()!=null) {
+				txInfo.setText("");
+				int tarjeta, parquimetro;
+				tarjeta= seleccionarTarjeta();
+				parquimetro= seleccionarParquimetro();
+				String consulta = "{call conectar(?, ?)}";
+				CallableStatement stmt= conexionBD.prepareCall(consulta);
+				stmt.setInt(1,tarjeta);
+				stmt.setInt(2,parquimetro); 
+				stmt.execute();
+				ResultSet rs =stmt.getResultSet();
+				ResultSetMetaData rsmd = rs.getMetaData();
+				if(rs.next()) {
+					String resultado;
+					if(rs.getString(1).startsWith("Error: ")) {
+						resultado = rs.getString(1);
+					} else {
+						resultado = rsmd.getColumnName(1)+": "+rs.getString(1)+" \n"+
+									rsmd.getColumnName(2)+": "+rs.getString(2)+" \n"+
+									rsmd.getColumnName(3)+": "+rs.getString(3);
+					}
+					txInfo.setText(resultado);
+					stmt.close();
+				}
+			}
 	    } catch (SQLException ex) {
 	    	System.out.println("error en aceptar");	    	
 	    	System.out.println("SQLException: " + ex.getMessage());
 	    	System.out.println("SQLState: " + ex.getSQLState());
 	    	System.out.println("VendorError: " + ex.getErrorCode());
 		}
-	}
-	
+	}	
 }
 
 

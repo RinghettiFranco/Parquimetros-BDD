@@ -254,9 +254,9 @@ CREATE PROCEDURE conectar(IN id_tarjeta INTEGER , IN id_parq INTEGER)
 					
 					#RETORNO EL RESULTADO
 					IF (parq<>id_parq) THEN
-						SELECT 'Cierre: Forzado' AS operacion, mtDiff AS tiempo, GREATEST(nsaldo,-999.99) AS saldo;
+						SELECT 'Cierre: Forzado' AS operacion, mtDiff AS tiempo_transcurrido, GREATEST(nsaldo,-999.99) AS saldo;
 					ELSE
-						SELECT 'Cierre' AS operacion, mtDiff AS tiempo, GREATEST(nsaldo,-999.99) AS saldo; 
+						SELECT 'Cierre' AS operacion, mtDiff AS tiempo_transcurrido, GREATEST(nsaldo,-999.99) AS saldo; 
 					END IF;
 				ELSE
 					#APERTURA
